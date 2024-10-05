@@ -1,10 +1,9 @@
-"use client";
-import { translate } from "@/app/lib/groq-translator";
+import Translate from "@/app/components/Translate";
 
 export default function Home() {
   return (
     <>
-      <button onClick={translate}>Translate</button>
+      <Translate />
     </>
   );
 }

@@ -1,10 +1,8 @@
 import { ChatGroq } from "@langchain/groq";
-import { HumanMessage, SystemMessage } from "@langchain/core/messages";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
-import { text } from "stream/consumers";
 
-export const translate = async () => {
+export const translate = async (input: string) => {
   // Instantiate model.
   // TODO: make the instantiation take input from users.
   const model = new ChatGroq({
@@ -16,14 +14,16 @@ export const translate = async () => {
   // Prompt Templating
   const systemTemplate = "Translate the following into {language}:";
   const promptTemplate = ChatPromptTemplate.fromMessages([
+    // System message
     ["system", systemTemplate],
+    // Human message
     ["user", "{text}"],
   ]);
 
   // Chain components together using LCEL.
   const parser = new StringOutputParser();
   const chain = promptTemplate.pipe(model).pipe(parser);
-  const result = await chain.invoke({ language: "Chinese", text: "Hello, World" });
+  const result = await chain.invoke({ language: "Chinese", text: input });
 
-  console.log(result);
+  return result;
 };
