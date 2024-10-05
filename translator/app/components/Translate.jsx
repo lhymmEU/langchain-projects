@@ -1,7 +1,7 @@
 "use client";
 
-import { translate } from "@/app/lib/groq-translator";
 import { useState } from "react";
+import { translateAction } from "../lib/actions";
 
 export default function Translate() {
   const [inputValue, setInputValue] = useState("");
@@ -13,7 +13,8 @@ export default function Translate() {
     setIsLoading(true);
     setResponse(""); // Clear previous response
     try {
-      const res = await translate(inputValue); // Await the translation response
+      // Use server actions to mitigate api key leakage for now.
+      const res = await translateAction(inputValue);
       setResponse(res);
     } catch (error) {
       console.error("Translation Error:", error);
