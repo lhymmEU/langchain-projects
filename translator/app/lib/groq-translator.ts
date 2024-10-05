@@ -6,7 +6,7 @@ export const translate = async (input: string) => {
   // Instantiate model.
   // TODO: make the instantiation take input from users.
   const model = new ChatGroq({
-    apiKey: "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",
+    apiKey: process.env.NEXT_PUBLIC_GROQ_API_KEY,
     model: "mixtral-8x7b-32768",
     temperature: 0,
   });
