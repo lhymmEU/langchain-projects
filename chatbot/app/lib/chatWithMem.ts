@@ -12,6 +12,26 @@ import {
   ChatPromptTemplate,
   MessagesPlaceholder,
 } from "@langchain/core/prompts";
+import {
+  SystemMessage,
+  HumanMessage,
+  AIMessage,
+  trimMessages,
+} from "@langchain/core/messages";
+
+const messages = [
+  new SystemMessage("you're a good assistant"),
+  new HumanMessage("hi! I'm bob"),
+  new AIMessage("hi!"),
+  new HumanMessage("I like vanilla ice cream"),
+  new AIMessage("nice"),
+  new HumanMessage("whats 2 + 2"),
+  new AIMessage("4"),
+  new HumanMessage("thanks"),
+  new AIMessage("no problem!"),
+  new HumanMessage("having fun?"),
+  new AIMessage("yes!"),
+];
 
 export const chatWithMem = async () => {
   // Initialize the model
@@ -19,6 +39,16 @@ export const chatWithMem = async () => {
     apiKey: process.env.GROQ_API_KEY,
     model: "mixtral-8x7b-32768",
     temperature: 0,
+  });
+
+  // Initialize the message trimmer to keep the length of the conversation manageable
+  const trimmer = trimMessages({
+    maxTokens: 10,
+    strategy: "last",
+    tokenCounter: (msgs) => msgs.length,
+    includeSystem: true,
+    allowPartial: false,
+    startOn: "human",
   });
 
   // Prompt templating
@@ -39,7 +69,11 @@ export const chatWithMem = async () => {
   // Define the function that calls the model
   const callModel = async (state: typeof GraphAnnotation.State) => {
     const chain = prompt.pipe(llm);
-    const response = await chain.invoke(state);
+    const trimmedMessage = await trimmer.invoke(state.messages);
+    const response = await chain.invoke({
+      messages: trimmedMessage,
+      language: state.language,
+    });
     return { messages: response };
   };
 
@@ -59,26 +93,9 @@ export const chatWithMem = async () => {
 
   // Simulate a conversation
   const input = {
-    messages: [
-      {
-        role: "user",
-        content: "Hi I'm _magicsheep?",
-      },
-    ],
+    messages: [...messages, new HumanMessage("What is the math questions I asked and what is the answer?")],
     language: "German",
   };
   const output = await app.invoke(input, config);
   console.log(output.messages[output.messages.length - 1]);
-
-  const input2 = {
-    messages: [
-      {
-        role: "user",
-        content: "What's my name?",
-      },
-    ],
-    language: "German",
-  };
-  const output2 = await app.invoke(input2, config);
-  console.log(output2.messages[output2.messages.length - 1]);
 };
