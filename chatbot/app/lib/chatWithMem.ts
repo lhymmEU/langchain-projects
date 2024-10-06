@@ -18,6 +18,7 @@ import {
   AIMessage,
   trimMessages,
 } from "@langchain/core/messages";
+import { StringOutputParser } from "@langchain/core/output_parsers";
 
 const messages = [
   new SystemMessage("you're a good assistant"),
@@ -33,7 +34,7 @@ const messages = [
   new AIMessage("yes!"),
 ];
 
-export const chatWithMem = async () => {
+export const chatWithMem = async (userInput: string) => {
   // Initialize the model
   const llm = new ChatGroq({
     apiKey: process.env.GROQ_API_KEY,
@@ -78,9 +79,11 @@ export const chatWithMem = async () => {
     language: Annotation<string>(),
   });
 
+  const parser = new StringOutputParser();
+
   // Define the function that calls the model
   const callModel = async (state: typeof GraphAnnotation.State) => {
-    const chain = prompt.pipe(llm);
+    const chain = prompt.pipe(llm).pipe(parser);
     const trimmedMessage = await trimmer.invoke(state.messages);
     const response = await chain.invoke({
       messages: trimmedMessage,
@@ -91,7 +94,7 @@ export const chatWithMem = async () => {
 
   // Define a new graph.
   // Detailed state transition diagram:
-  // 1. Initial State { messages, language } -> 
+  // 1. Initial State { messages, language } ->
   // 2. "model" Node (callModel function)
   //    {
   //      1) Trim messages { trimmer.invoke(state.messages) }
@@ -106,7 +109,6 @@ export const chatWithMem = async () => {
     // Each edge defines the flow from one node to another.
     .addEdge(START, "model")
     .addEdge("model", END);
-
 
   const memory = new MemorySaver();
   // The checkpointer will periodically saves the state to MemorySaver at each checkpoint:
@@ -125,9 +127,12 @@ export const chatWithMem = async () => {
 
   // Simulate a conversation
   const input = {
-    messages: [...messages, new HumanMessage("What is the math questions I asked and what is the answer?")],
+    messages: [new HumanMessage(userInput)],
     language: "German",
   };
   const output = await app.invoke(input, config);
-  console.log(output.messages[output.messages.length - 1]);
+  // Retrieve the last message from the output array.
+  // The array a list of message objects.
+  const finalMessage = output.messages[output.messages.length - 1].content;
+  return finalMessage;
 };
